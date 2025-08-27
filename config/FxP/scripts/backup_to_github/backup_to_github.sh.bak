@@ -1,0 +1,248 @@
+#!/bin/bash
+
+# Nerd Font Icons
+icon_start=""          # nf-fa-code
+icon_config=""         # nf-seti-config
+icon_home=""           # nf-fa-home
+icon_copy=""           # nf-fa-share_square_o
+icon_check=""          # nf-fa-check_circle
+icon_warn=""           # nf-fa-warning
+icon_error=""          # nf-fa-times_circle
+icon_git=""            # nf-dev-git
+icon_add=""            # nf-fa-plus
+icon_commit=""         # nf-oct-git_commit
+icon_pull=""           # nf-fa-long_arrow_left
+icon_push=""           # nf-fa-long_arrow_up
+icon_spinner=('⠋' '⠙' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏') # Powerline spinner
+icon_done=""           # nf-fa-check
+icon_cleanup=""        # nf-oct-trashcan
+icon_notify=""         # nf-fa-bullhorn
+icon_time=""           # nf-fa-clock_o
+
+# Colors
+RED='\e[31m'
+GREEN='\e[32m'
+YELLOW='\e[33m'
+CYAN='\e[36m'
+MAGENTA='\e[35m'
+BOLD='\e[1m'
+NC='\e[0m'
+
+# GitHub Config
+GITHUB_REPO_OWNER="FxP1998"
+GITHUB_REPO_NAME="FxP"
+GIT_BRANCH="main"
+GITHUB_REMOTE="origin"
+EXPECTED_REPO_URL="github.com/$GITHUB_REPO_OWNER/$GITHUB_REPO_NAME"
+
+# Backup Config
+CONFIG_BACKUP_DIR="$HOME/FxP/config"
+HOME_BACKUP_DIR="$HOME/FxP/home"
+TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+TEMP_BACKUP_DIR="$HOME/FxP_backup_$TIMESTAMP"
+
+# Files to Backup
+CONFIG_FILES_TO_BACKUP=(
+    "$HOME/.config/alacritty"
+    "$HOME/.config/gtk-4.0"
+    "$HOME/.config/gtk-3.0"
+    "$HOME/.config/htop"
+    "$HOME/.config/btop"
+    "$HOME/.config/hypr"
+    "$HOME/.config/hypr.default"
+    "$HOME/.config/cava"
+    "$HOME/.config/kitty"
+    "$HOME/.config/mpv"
+    "$HOME/.config/nwg-look"
+    "$HOME/.config/waybar"
+    "$HOME/.config/nautilus"
+    "$HOME/.config/yazi"
+    "$HOME/.config/obs-studio"
+    "$HOME/.config/xsettingsd"
+    "$HOME/.config/FxP"
+    "$HOME/.config/starship"
+    "$HOME/.config/xdg-desktop-portal"
+    "$HOME/.config/zed"
+    "$HOME/.config/systemd"
+    "$HOME/.config/rofi"
+    "$HOME/.config/kde.org"
+    "$HOME/.config/menus"
+    "$HOME/.config/qt5ct"
+    "$HOME/.config/qt6ct"
+    "$HOME/.config/qtvirtualkeyboard"
+    "$HOME/.config/session"
+    "$HOME/.config/dolphinrc"
+    "$HOME/.config/electron-flags.conf"
+)
+
+HOME_FILES_TO_BACKUP=(
+    "$HOME/.icons"
+    "$HOME/.fonts"
+    "$HOME/.themes"
+    "$HOME/.zshrc"
+    "$HOME/.bashrc"
+    "$HOME/.vimrc"
+    "$HOME/.gtkrc-2.0"
+    "$HOME/.vim"
+)
+
+# Logging Functions
+log()        { echo -e "${CYAN}${icon_time}  [$(date +"%H:%M:%S")]${NC} $1"; }
+notify()     { command -v notify-send &>/dev/null && notify-send "${icon_notify} Backup Script" "$1"; }
+log_success(){ echo -e "${GREEN}${icon_check}  $1${NC}"; }
+log_warn()   { echo -e "${YELLOW}${icon_warn}  $1${NC}"; }
+log_error()  { echo -e "${RED}${icon_error}  $1${NC}"; }
+
+spinner() {
+    local pid=$1; local msg=$2; local delay=0.1; local i=0
+    while kill -0 $pid 2>/dev/null; do
+        printf "\r${MAGENTA}${icon_spinner[i % ${#icon_spinner[@]}]}${NC} $msg"
+        ((i++)); sleep $delay
+    done
+    printf "\r"
+}
+
+# Git Protection Functions
+verify_github_repo() {
+    local current_remote=$(git remote get-url origin 2>/dev/null | tr '[:upper:]' '[:lower:]')
+    
+    if [ -z "$current_remote" ]; then
+        log_error "Not in a Git repository!"
+        return 1
+    fi
+
+    if [[ "$current_remote" != *"$EXPECTED_REPO_URL"* ]]; then
+        log_error "DANGER: Wrong repository detected!"
+        log_error "Expected: $EXPECTED_REPO_URL"
+        log_error "Current:  ${current_remote:0:60}..."
+        return 1
+    fi
+
+    if ! git diff-index --quiet HEAD --; then
+        log_warn "Uncommitted changes detected"
+        return 2
+    fi
+    
+    return 0
+}
+
+git_push_with_retry() {
+    local max_retries=5
+    local attempt=0
+    local retry_delay=10
+    
+    while [ $attempt -lt $max_retries ]; do
+        ((attempt++))
+        log "${icon_push} Push attempt $attempt/$max_retries..."
+        
+        if git push -u "$GITHUB_REMOTE" "$GIT_BRANCH"; then
+            log_success "Push successful"
+            return 0
+        else
+            if git status | grep -q "diverged"; then
+                log_warn "Branches diverged, pulling changes..."
+                if ! git pull --rebase; then
+                    log_error "Failed to rebase"
+                    return 1
+                fi
+            fi
+            
+            sleep $retry_delay
+            ((retry_delay *= 2))
+        fi
+    done
+    
+    log_error "Maximum push attempts reached"
+    return 1
+}
+
+# ---- MAIN SCRIPT ----
+echo -e "${BOLD}${icon_start}  Starting FxP Backup Script...${NC}"
+notify "Backup script started"
+
+# 1. Backup existing ~/.FxP
+log "${icon_copy} Backing up old ~/FxP..."
+mkdir -p "$TEMP_BACKUP_DIR"
+cp -r "$HOME/FxP"/* "$TEMP_BACKUP_DIR" 2>/dev/null && \
+    log_success "Old backup saved" || \
+    log_warn "No previous backup available"
+
+# 2. Prepare fresh backup
+log "${icon_config} Creating fresh backup directories..."
+mkdir -p "$CONFIG_BACKUP_DIR" "$HOME_BACKUP_DIR"
+
+# 3. Backup config files
+log "${icon_config} Backing up config files..."
+for item in "${CONFIG_FILES_TO_BACKUP[@]}"; do
+    name=$(basename "$item")
+    if [ -e "$item" ]; then
+        cp -r "$item" "$CONFIG_BACKUP_DIR"/ && \
+            log_success "Config: $name" || \
+            log_warn "Failed to backup: $name"
+    else
+        log_warn "Config: $name not found"
+    fi
+done
+
+# 4. Backup home files
+log "${icon_home} Backing up home files..."
+for item in "${HOME_FILES_TO_BACKUP[@]}"; do
+    name=$(basename "$item")
+    if [ -e "$item" ]; then
+        cp -r "$item" "$HOME_BACKUP_DIR"/ && \
+            log_success "Home: $name" || \
+            log_warn "Failed to backup: $name"
+    else
+        log_warn "Home: $name not found"
+    fi
+done
+
+# 5. Secure Git Operations
+cd "$HOME/FxP" || {
+    log_error "Cannot enter ~/FxP"
+    notify "Backup failed: Directory error"
+    exit 1
+}
+
+log "${icon_git} Verifying repository..."
+if ! verify_github_repo; then
+    if [ $? -eq 1 ]; then
+        log_error "ABORTING: Repository verification failed"
+        notify "Backup failed: Wrong repository"
+        exit 1
+    fi
+fi
+
+log "${icon_add} Staging changes..."
+git add . || {
+    log_error "Failed to stage changes"
+    notify "Backup failed: Git error"
+    exit 1
+}
+
+log "${icon_commit} Committing changes..."
+git commit -m "${icon_time} Automated backup $TIMESTAMP" || 
+    log_warn "No new changes to commit"
+
+log "${icon_pull} Updating from remote..."
+if ! git pull --rebase "$GITHUB_REMOTE" "$GIT_BRANCH"; then
+    log_error "Failed to update from remote"
+    notify "Backup failed: Git sync error"
+    exit 1
+fi
+
+log "${icon_push} Pushing changes..."
+if ! git_push_with_retry; then
+    log_error "FATAL: Failed to push backup"
+    notify "Backup failed: Could not push"
+    exit 1
+fi
+
+# 6. Cleanup
+log "${icon_cleanup} Cleaning up..."
+rm -rf "$TEMP_BACKUP_DIR"
+
+# Final status
+log_success "${icon_done} Backup completed successfully"
+notify "Backup completed successfully"
+echo -e "${BOLD}${GREEN}${icon_done}  Backup Finished!${NC}${NC}"

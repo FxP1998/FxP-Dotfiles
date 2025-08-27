@@ -1,0 +1,44 @@
+[general]
+import = ["~/.config/alacritty/catppuccin-macchiato.toml"]
+
+
+
+[env]
+WINIT_X11_SCALE_FACTOR = "1.0"
+TERM = "xterm-256color"
+
+
+[window]
+padding = {x = 15, y = 15}
+dynamic_padding = true
+decorations = "None"
+opacity = 0.6
+blur = true
+
+
+
+[scrolling]
+history = 10000
+multiplier = 5 
+
+
+[font]
+normal = { family = "MonaspaceRadonFrozen", style = "Regular" } 
+bold = { family = "MonaspaceRadonFrozen", style = "Bold" } 
+italic = { family = "MonaspaceRadonFrozen", style = "Italic" } 
+bold_italic = { family = "MonaspaceRadonFrozen", style = "BoldItalic" } 
+size = 11.5
+
+
+
+
+[mouse]
+hide_when_typing = false
+bindings = [
+ { mouse = "Middle", action = "PasteSelection" }
+]
+
+
+
+
+

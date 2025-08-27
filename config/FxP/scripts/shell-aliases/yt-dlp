@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# Ensure download dirs exist
+[ ! -d "$HOME/Music/yt-dlp" ] && mkdir -p "$HOME/Music/yt-dlp"
+[ ! -d "$HOME/Videos/yt-dlp" ] && mkdir -p "$HOME/Videos/yt-dlp"
+
+# Audio download
+yta() {
+    [ -z "$1" ] && echo "Usage: yta <YouTube_URL>" && return 1
+    yt-dlp -x --audio-format mp3 --audio-quality 0 --embed-thumbnail --add-metadata \
+        -o "$HOME/Music/yt-dlp/%(title)s.%(ext)s" --progress --newline "$1"
+}
+
+# Video download (best <=1440p mp4)
+ytv() {
+    [ -z "$1" ] && echo "Usage: ytv <YouTube_URL>" && return 1
+    yt-dlp -f "bestvideo[height<=1440][ext=mp4]+bestaudio[ext=m4a]/best[height<=1440][ext=mp4]/best[ext=mp4]/best" \
+        --merge-output-format mp4 --add-metadata \
+        -o "$HOME/Videos/yt-dlp/%(title)s.%(ext)s" --progress --newline "$1"
+}
+
+# Simpler video download
+ytv_simple() {
+    [ -z "$1" ] && echo "Usage: ytv_simple <YouTube_URL>" && return 1
+    yt-dlp -f "best[height<=1440]" --merge-output-format mp4 \
+        -o "$HOME/Videos/yt-dlp/%(title)s.%(ext)s" --progress "$1"
+}
+alias ytv-simple=ytv_simple
+
+# List available formats
+yt_formats() {
+    [ -z "$1" ] && echo "Usage: yt_formats <YouTube_URL>" && return 1
+    yt-dlp -F "$1"
+}
+alias yt-formats=yt_formats
+
+# Audio playlist
+yta_playlist() {
+    [ -z "$1" ] && echo "Usage: yta_playlist <Playlist_URL>" && return 1
+    yt-dlp -x --audio-format mp3 --audio-quality 0 --embed-thumbnail --add-metadata \
+        -o "$HOME/Music/yt-dlp/%(playlist_title)s/%(title)s.%(ext)s" --progress "$1"
+}
+alias yta-playlist=yta_playlist
+
+# Video playlist
+ytv_playlist() {
+    [ -z "$1" ] && echo "Usage: ytv_playlist <Playlist_URL>" && return 1
+    yt-dlp -f "best[height<=1440]" --merge-output-format mp4 \
+        -o "$HOME/Videos/yt-dlp/%(playlist_title)s/%(title)s.%(ext)s" --progress "$1"
+}
+alias ytv-playlist=ytv_playlist
+
+# Continue download
+yt_continue() {
+    [ -z "$1" ] && echo "Usage: yt_continue <YouTube_URL>" && return 1
+    yt-dlp --continue "$1"
+}
+alias yt-continue=yt_continue
+
+# Update yt-dlp (system package manager)
+alias yt-update='sudo pacman -Syu yt-dlp'
+
+# Help
+yt_help() {
+    cat <<EOF
+YouTube Download Commands:
+  yta <URL>          - Download audio (MP3 with thumbnail)
+  ytv <URL>          - Download video (up to 1440p MP4)
+  ytv-simple <URL>   - Simple video download
+  yt-formats <URL>   - Show available formats
+  yta-playlist <URL> - Download audio playlist
+  ytv-playlist <URL> - Download video playlist
+  yt-continue <URL>  - Continue interrupted download
+  yt-update          - Update yt-dlp (via pacman)
+EOF
+}
+

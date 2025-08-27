@@ -1,0 +1,17 @@
+# ~/.config/FxP/scripts/shell-aliases/pacman-paru
+
+# pacman shortcuts
+alias i='sudo pacman -S --needed'       
+alias r='sudo pacman -Rns'             
+alias u='sudo pacman -Syu'     
+alias s='pacman -Ss'          
+alias q='pacman -Qs'          
+alias l='pacman -Ql'
+
+# paru shortcuts (AUR helper)
+alias pi='paru -S --needed'
+alias pr='paru -Rns'
+alias pu='paru -Syu'
+alias ps='paru -Ss'
+alias pq='paru -Qs'
+

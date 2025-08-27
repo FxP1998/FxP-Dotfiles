@@ -1,0 +1,51 @@
+" === Catppuccin Mocha Theme Settings ===
+let g:catppuccin_flavour = "mocha"
+colorscheme catppuccin_mocha
+
+" Enable true color support
+if has('termguicolors')
+  set termguicolors
+endif
+
+" === Basic Editor Settings ===
+set number                  " Show line numbers
+set relativenumber          " Relative line numbers
+set tabstop=4               " Number of spaces a tab counts for
+set shiftwidth=4            " Number of spaces for autoindent
+set expandtab               " Use spaces instead of tabs
+set smartindent             " Smart autoindenting
+set nowrap                  " Don't wrap lines
+set cursorline              " Highlight current line
+set scrolloff=8             " Keep 8 lines above/below cursor
+set sidescrolloff=8         " Keep 8 columns beside cursor
+
+" === Search Settings ===
+set ignorecase              " Case insensitive search
+set smartcase               " ...unless search contains uppercase
+set hlsearch                " Highlight search matches
+set incsearch               " Show matches as you type
+
+" === Visual Enhancements ===
+syntax enable               " Enable syntax highlighting
+set showmatch               " Show matching brackets
+set laststatus=2            " Always show status line
+set noshowmode              " Don't show mode (handled by lightline)
+set signcolumn=yes          " Always show sign column
+
+" === Custom Highlights ===
+" Make comments more visible (italic if your terminal supports it)
+highlight Comment gui=italic cterm=italic
+
+" Make the cursor line stand out
+highlight CursorLine guibg=#363a4f
+
+" === Key Mappings ===
+" Clear search highlights with Ctrl+L
+nnoremap <silent> <C-l> :nohlsearch<CR><C-l>
+
+" === Plugin Setup (if you add plugins later) ===
+" Example for vim-plug:
+" call plug#begin('~/.vim/plugged')
+" Plug 'itchyny/lightline.vim'
+" call plug#end()
+" let g:lightline = {'colorscheme': 'catppuccin_macchiato'}

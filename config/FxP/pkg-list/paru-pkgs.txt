@@ -1,0 +1,4 @@
+paru-bin
+paru-bin-debug
+pfetch
+pipe-viewer-git

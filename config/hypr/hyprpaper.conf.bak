@@ -1,0 +1,4 @@
+# ~/.config/hypr/hyprpaper.conf
+preload = ~/.config/FxP/wallpapers/default/linux-1.png
+wallpaper = eDP-1,~/.config/FxP/wallpapers/default/linux-1.png
+ipc = off  # Critical to prevent conflicts!

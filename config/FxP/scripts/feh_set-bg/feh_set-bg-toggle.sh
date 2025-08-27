@@ -1,0 +1,59 @@
+#!/bin/bash
+
+SCRIPT_NAME="feh_set-bg.sh"
+
+# Kill other running instances of this script (except this one)
+PIDS=$(pgrep -f "$SCRIPT_NAME" | grep -v "$$")
+if [[ -n "$PIDS" ]]; then
+    echo "Killing other instances of $SCRIPT_NAME"
+    kill $PIDS
+else
+    echo "No other instances to kill."
+fi
+
+# Directories containing wallpapers
+WALLDIR="$HOME/Pictures/wallpapers"
+GRUVBOXDIR="$HOME/Pictures/wallpapers/Gruvbox"  # Updated path to Gruvbox folder
+
+# Check if the Gruvbox directory exists before including it
+if [[ ! -d "$GRUVBOXDIR" ]]; then
+    echo "Gruvbox directory does not exist or is not found at $GRUVBOXDIR. Skipping this directory."
+    GRUVBOXDIR=""  # Skip Gruvbox if it doesn't exist
+fi
+
+# Find all images from both directories (wallpapers and Gruvbox)
+IMG="$(find "$WALLDIR" "$GRUVBOXDIR" -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.bmp' -o -iname '*.gif' \) | shuf -n 1)"
+
+# Set wallpaper with feh
+echo "Setting wallpaper to: $IMG"
+feh --bg-scale "$IMG"
+
+# Now try to get the current wallpaper using feh's history file
+# Feh stores the wallpaper path in a history file (e.g., ~/.fehbg)
+if [[ -f "$HOME/.fehbg" ]]; then
+    CURRENT_WALLPAPER=$(grep -oP '(?<=--bg-scale\s)(\S+)' "$HOME/.fehbg")
+    echo "Current wallpaper path: $CURRENT_WALLPAPER"
+
+    CURRENT_WALLPAPER=$(echo "$CURRENT_WALLPAPER" | sed "s/^['\"]\(.*\)['\"]$/\1/")
+
+    if [[ -n "$CURRENT_WALLPAPER" && -f "$CURRENT_WALLPAPER" ]]; then
+        echo "Copying current wallpaper to ~/.config/FxP/tmp/current_wall.png"
+        cp "$CURRENT_WALLPAPER" ~/.config/FxP/tmp/current_wall.png
+        echo "Copied to ~/.config/FxP/tmp/current_wall.png"
+    else
+        echo "Failed to find the current wallpaper file or it's missing!"
+    fi
+
+else
+    echo "No ~/.fehbg file found!"
+fi
+
+# Set new wallpaper with feh again
+echo "Setting new wallpaper with feh"
+feh --bg-scale "$IMG"
+
+# UPDATE betterlockscreen 
+betterlockscreen -u ~/.config/FxP/tmp/current_wall.png --blur 0.60
+
+# notify-send
+notify-send Wallpaper "All Done"
